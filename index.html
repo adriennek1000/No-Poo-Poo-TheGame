@@ -1,0 +1,2001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NO POO POO RUN!</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Press+Start+2P&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background: radial-gradient(circle at center, #2d1b36 0%, #140c1c 100%);
+            font-family: 'Nunito', sans-serif;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            color: #fff;
+        }
+        .arcade-title {
+            font-family: 'Fredoka One', cursive;
+            text-shadow: 0 4px 0 #7c2d12, 0 6px 12px rgba(0,0,0,0.6);
+        }
+        .pixel-font {
+            font-family: 'Press Start 2P', monospace;
+        }
+        #game-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            aspect-ratio: 16 / 10;
+            max-height: 76vh;
+            border: 6px solid #f59e0b;
+            border-radius: 20px;
+            box-shadow: 0 0 0 4px #78350f, 0 20px 50px rgba(0,0,0,0.8), 0 0 30px rgba(245, 158, 11, 0.35);
+            overflow: hidden;
+            background: #1e1b4b;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        .btn-arcade {
+            background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%);
+            border: 3px solid #fffbeb;
+            box-shadow: 0 5px 0 #78350f, 0 8px 15px rgba(0,0,0,0.5);
+            color: #451a03;
+            font-family: 'Fredoka One', cursive;
+            transition: transform 0.08s ease, box-shadow 0.08s ease;
+            cursor: pointer;
+        }
+        .btn-arcade:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #78350f, 0 3px 6px rgba(0,0,0,0.5);
+        }
+        .btn-blue {
+            background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);
+            border: 3px solid #f0f9ff;
+            box-shadow: 0 5px 0 #0c4a6e, 0 8px 15px rgba(0,0,0,0.5);
+            color: #fff;
+        }
+        .btn-blue:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #0c4a6e;
+        }
+        .hud-badge {
+            background: rgba(20, 12, 28, 0.78);
+            backdrop-filter: blur(4px);
+            border: 2px solid rgba(251, 191, 36, 0.6);
+            border-radius: 12px;
+        }
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px) rotate(-2deg); }
+            50% { transform: translateY(-6px) rotate(2deg); }
+        }
+        .float-anim {
+            animation: floatSlow 2.6s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="p-2 sm:p-4">
+
+    <!-- Top Header Bar -->
+    <div class="w-full max-w-[900px] flex items-center justify-between mb-2 px-1">
+        <div class="flex items-center gap-2">
+            <span class="text-2xl sm:text-3xl">🚫💩</span>
+            <h1 class="arcade-title text-xl sm:text-3xl text-amber-300 tracking-wide">NO POO POO RUN!</h1>
+        </div>
+        <div class="flex items-center gap-2">
+            <button id="mute-btn" class="hud-badge px-3 py-1.5 text-xs sm:text-sm font-bold text-amber-200 hover:bg-amber-900/50 cursor-pointer">
+                🔊 SFX ON
+            </button>
+            <button id="pause-btn" class="hud-badge px-3 py-1.5 text-xs sm:text-sm font-bold text-amber-200 hover:bg-amber-900/50 cursor-pointer hidden">
+                ⏸ PAUSE
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Arcade Screen Container -->
+    <div id="game-wrapper">
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- In-Game HUD Overlay -->
+        <div id="hud-overlay" class="hidden absolute top-0 left-0 right-0 p-2.5 sm:p-4 flex justify-between items-start pointer-events-none">
+            <!-- Lives & Shield Meter -->
+            <div class="flex flex-col gap-1.5">
+                <div class="hud-badge px-3 py-1.5 flex items-center gap-1.5 shadow-lg">
+                    <span id="hearts-display" class="text-lg sm:text-2xl tracking-widest">❤️❤️❤️</span>
+                </div>
+                <div id="shield-bar-wrap" class="hud-badge px-2.5 py-1 flex items-center gap-2 shadow-lg">
+                    <span class="text-xs font-black text-sky-300">🪧 SIGN SHIELD</span>
+                    <div class="w-20 sm:w-28 h-2.5 bg-slate-800 rounded-full overflow-hidden border border-slate-600">
+                        <div id="shield-bar" class="h-full bg-gradient-to-r from-sky-400 to-emerald-400 transition-all duration-100" style="width: 100%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Wave & Combo -->
+            <div class="hidden sm:flex flex-col items-center">
+                <div class="hud-badge px-3 py-1 text-center shadow-lg">
+                    <div id="wave-display" class="pixel-font text-[10px] text-amber-300">WAVE 1</div>
+                    <div id="speed-badge" class="text-xs font-bold text-pink-300 mt-0.5">CRUISING</div>
+                </div>
+            </div>
+
+            <!-- Score & High Score -->
+            <div class="hud-badge px-3 py-1.5 text-right shadow-lg">
+                <div class="pixel-font text-[10px] sm:text-xs text-amber-300">SCORE: <span id="score-display" class="text-white">0</span></div>
+                <div class="pixel-font text-[9px] sm:text-[10px] text-amber-200/80 mt-1">BEST: <span id="highscore-display" class="text-amber-300">0</span></div>
+            </div>
+        </div>
+
+        <!-- Start Screen Overlay -->
+        <div id="start-screen" class="absolute inset-0 bg-gradient-to-b from-indigo-950/85 via-purple-950/85 to-amber-950/90 flex flex-col items-center justify-center p-4 text-center z-20">
+            <div class="float-anim mb-2">
+                <span class="inline-block bg-white text-slate-900 font-black text-xs sm:text-sm px-3 py-1 rounded-full border-2 border-slate-900 shadow-md uppercase tracking-wider">
+                    Official Arcade Edition
+                </span>
+            </div>
+            <h2 class="arcade-title text-4xl sm:text-6xl text-amber-300 mb-1 tracking-tight">
+                NO POO POO RUN!
+            </h2>
+            <p class="text-amber-100 text-xs sm:text-base max-w-lg mb-4 font-bold">
+                Dodge incoming cartoon poo fired by the aviator-wearing pig &amp; his buddy in the groovy tie-dye VW Beetle!
+            </p>
+
+            <!-- Character Preview Cards -->
+            <div class="grid grid-cols-2 gap-3 sm:gap-5 w-full max-w-md mb-5">
+                <div class="bg-amber-900/60 border-2 border-amber-400/70 rounded-2xl p-2.5 flex flex-col items-center shadow-lg">
+                    <canvas id="previewHero" width="90" height="90" class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-amber-200/20 mb-1"></canvas>
+                    <div class="font-black text-amber-300 text-xs sm:text-sm">DASHIKI HERO</div>
+                    <div class="text-[10px] sm:text-xs text-amber-100/80">Run, Jump &amp; Block!</div>
+                </div>
+                <div class="bg-purple-900/60 border-2 border-pink-400/70 rounded-2xl p-2.5 flex flex-col items-center shadow-lg">
+                    <canvas id="previewBoss" width="110" height="90" class="w-20 h-16 sm:w-24 sm:h-20 rounded-xl bg-pink-200/20 mb-1"></canvas>
+                    <div class="font-black text-pink-300 text-xs sm:text-sm">PIG &amp; VW CRUISER</div>
+                    <div class="text-[10px] sm:text-xs text-pink-100/80">Tie-Dye Poo Blasters!</div>
+                </div>
+            </div>
+
+            <!-- Controls Quick Guide -->
+            <div class="bg-black/40 border border-white/15 rounded-xl px-4 py-2 mb-5 text-[11px] sm:text-xs text-amber-100 flex flex-wrap justify-center gap-x-4 gap-y-1">
+                <span>⬅️➡️ / <b>A D</b>: Run</span>
+                <span>⬆️ / <b>SPACE</b>: Jump Dash</span>
+                <span>⬇️ / <b>S / SHIFT</b>: Hold Sign Shield</span>
+            </div>
+
+            <button id="start-btn" class="btn-arcade text-xl sm:text-2xl px-8 py-3 rounded-2xl tracking-wide">
+                ▶ START RUNNING!
+            </button>
+        </div>
+
+        <!-- Pause Overlay -->
+        <div id="pause-screen" class="hidden absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center p-4 text-center z-20">
+            <h2 class="arcade-title text-4xl sm:text-5xl text-amber-300 mb-4">GAME PAUSED</h2>
+            <p class="text-amber-100 text-sm mb-6">Catch your breath before the pig reloads!</p>
+            <div class="flex gap-4">
+                <button id="resume-btn" class="btn-arcade text-lg px-6 py-2.5 rounded-xl">▶ RESUME</button>
+                <button id="restart-pause-btn" class="btn-arcade btn-blue text-lg px-6 py-2.5 rounded-xl">↻ RESTART</button>
+            </div>
+        </div>
+
+        <!-- Game Over Overlay -->
+        <div id="gameover-screen" class="hidden absolute inset-0 bg-gradient-to-b from-amber-950/90 via-stone-950/92 to-black/95 flex flex-col items-center justify-center p-4 text-center z-20">
+            <div class="text-5xl sm:text-6xl mb-1 animate-bounce">💩</div>
+            <h2 class="arcade-title text-3xl sm:text-5xl text-amber-400 mb-1">OH NO! YOU GOT SPLATTERED!</h2>
+            <p id="funny-quote" class="text-amber-200 italic text-xs sm:text-sm mb-4 max-w-md font-bold">
+                "The sign clearly said NO POO POO, buddy!"
+            </p>
+
+            <div class="bg-stone-900/90 border-2 border-amber-500/70 rounded-2xl px-6 py-3 mb-5 flex gap-6 sm:gap-10 shadow-xl">
+                <div>
+                    <div class="pixel-font text-[10px] text-amber-300/80">FINAL SCORE</div>
+                    <div id="final-score" class="arcade-title text-3xl sm:text-4xl text-white mt-1">0</div>
+                </div>
+                <div class="w-px bg-amber-500/30"></div>
+                <div>
+                    <div class="pixel-font text-[10px] text-amber-300/80">HIGH SCORE</div>
+                    <div id="final-best" class="arcade-title text-3xl sm:text-4xl text-amber-300 mt-1">0</div>
+                </div>
+            </div>
+
+            <button id="retry-btn" class="btn-arcade text-xl sm:text-2xl px-8 py-3 rounded-2xl">
+                ↻ PLAY AGAIN!
+            </button>
+        </div>
+    </div>
+
+    <!-- Mobile / Touch Arcade Controls Outside Canvas -->
+    <div id="mobile-controls" class="w-full max-w-[900px] mt-3 flex items-center justify-between gap-2 px-1">
+        <div class="flex gap-2 sm:gap-3">
+            <button id="btn-left" class="btn-arcade w-16 h-14 sm:w-20 sm:h-14 rounded-2xl text-2xl flex items-center justify-center" aria-label="Move Left">
+                ◀
+            </button>
+            <button id="btn-right" class="btn-arcade w-16 h-14 sm:w-20 sm:h-14 rounded-2xl text-2xl flex items-center justify-center" aria-label="Move Right">
+                ▶
+            </button>
+        </div>
+        <div class="hidden md:block text-xs text-amber-200/75 font-bold text-center">
+            TIP: Collect 🧻 Golden TP, 🧼 Soap &amp; 🪧 Signs for bonus points &amp; shield energy!
+        </div>
+        <div class="flex gap-2 sm:gap-3">
+            <button id="btn-shield" class="btn-arcade btn-blue px-4 h-14 sm:px-5 sm:h-14 rounded-2xl text-sm sm:text-base flex items-center justify-center gap-1" aria-label="Hold Sign Shield">
+                🪧 SHIELD
+            </button>
+            <button id="btn-jump" class="btn-arcade px-4 h-14 sm:px-6 sm:h-14 rounded-2xl text-sm sm:text-base flex items-center justify-center gap-1" aria-label="Jump">
+                ⬆ JUMP
+            </button>
+        </div>
+    </div>
+
+<script>
+/**
+ * ============================================================================
+ * NO POO POO RUN! - Retro 2D Arcade Dodge-and-Survive Game
+ * Features custom procedural cartoon sprites matching both reference images:
+ * 1. Cheerful Black hero in vibrant blue/orange/yellow/red geometric dashiki
+ *    holding a crisp white "No Poo Poo" sign.
+ * 2. Autumn boutique street with 'COUGARS A Flirty Boutique', 'LAMA DRAMA',
+ *    warm glowing streetlamps, autumn wreaths, and drifting leaves/confetti.
+ * 3. Psychedelic tie-dye VW Beetle loaded with roof-rack suitcase, peace
+ *    signs, daisy decals, brown-haired driver, and aviator-wearing pig!
+ * ============================================================================
+ */
+
+// --- Web Audio API Retro Chiptune & SFX Synthesizer ---
+class ArcadeAudio {
+    constructor() {
+        this.ctx = null;
+        this.muted = false;
+        this.bgmTimer = null;
+        this.bgmStep = 0;
+        this.isPlayingBgm = false;
+    }
+
+    init() {
+        if (!this.ctx) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            this.ctx = new AudioCtx();
+        }
+        if (this.ctx.state === 'suspended') {
+            this.ctx.resume();
+        }
+    }
+
+    toggleMute() {
+        this.muted = !this.muted;
+        if (this.muted) {
+            this.stopBgm();
+        } else if (gameState === 'PLAYING') {
+            this.startBgm();
+        }
+        return this.muted;
+    }
+
+    playTone(freq, type, duration, vol = 0.12, slideTo = null, delay = 0) {
+        if (this.muted) return;
+        this.init();
+        const now = this.ctx.currentTime + delay;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, now);
+        if (slideTo) {
+            osc.frequency.exponentialRampToValueAtTime(Math.max(20, slideTo), now + duration);
+        }
+        gain.gain.setValueAtTime(vol, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + duration);
+    }
+
+    playJump() {
+        this.playTone(240, 'square', 0.18, 0.11, 620);
+    }
+
+    playShoot() {
+        // Cartoon "bloop/poot" launcher sound
+        this.playTone(320, 'triangle', 0.12, 0.08, 110);
+    }
+
+    playHonk() {
+        // Classic VW Beetle twin-tone horn
+        this.playTone(392, 'sawtooth', 0.14, 0.08, 385, 0);
+        this.playTone(493.88, 'sawtooth', 0.14, 0.08, 485, 0);
+        this.playTone(392, 'sawtooth', 0.22, 0.08, 380, 0.18);
+        this.playTone(493.88, 'sawtooth', 0.22, 0.08, 480, 0.18);
+    }
+
+    playShieldBlock() {
+        // Boing / Sign deflect sound
+        this.playTone(520, 'sine', 0.12, 0.14, 880);
+        this.playTone(780, 'triangle', 0.14, 0.1, 1040, 0.06);
+    }
+
+    playPowerup() {
+        const notes = [523.25, 659.25, 783.99, 1046.5];
+        notes.forEach((n, i) => this.playTone(n, 'square', 0.11, 0.1, null, i * 0.065));
+    }
+
+    playSplat() {
+        // Comical descending splat + noise burst
+        this.playTone(190, 'sawtooth', 0.32, 0.18, 45);
+        this.playTone(130, 'square', 0.28, 0.15, 38, 0.04);
+    }
+
+    playGameOver() {
+        const notes = [392, 369.99, 349.23, 329.63, 261.63];
+        notes.forEach((n, i) => this.playTone(n, 'sawtooth', 0.24, 0.12, n * 0.92, i * 0.2));
+    }
+
+    startBgm() {
+        if (this.muted || this.isPlayingBgm) return;
+        this.init();
+        this.isPlayingBgm = true;
+        this.bgmStep = 0;
+
+        // Upbeat funky retro arcade bass + melody loop
+        const melody = [
+            523.25, 0, 659.25, 523.25, 783.99, 0, 659.25, 587.33,
+            523.25, 0, 587.33, 659.25, 493.88, 0, 392.00, 0,
+            523.25, 0, 659.25, 783.99, 880.00, 783.99, 659.25, 523.25,
+            587.33, 659.25, 587.33, 493.88, 523.25, 0, 0, 0
+        ];
+        const bass = [
+            130.81, 130.81, 196.00, 196.00, 164.81, 164.81, 196.00, 196.00,
+            174.61, 174.61, 220.00, 220.00, 196.00, 196.00, 246.94, 196.00
+        ];
+
+        this.bgmTimer = setInterval(() => {
+            if (this.muted || !this.isPlayingBgm) return;
+            const mNote = melody[this.bgmStep % melody.length];
+            const bNote = bass[this.bgmStep % bass.length];
+            if (mNote > 0) {
+                this.playTone(mNote, 'square', 0.13, 0.045);
+            }
+            if (bNote > 0) {
+                this.playTone(bNote, 'triangle', 0.15, 0.065);
+            }
+            this.bgmStep++;
+        }, 165);
+    }
+
+    stopBgm() {
+        this.isPlayingBgm = false;
+        if (this.bgmTimer) {
+            clearInterval(this.bgmTimer);
+            this.bgmTimer = null;
+        }
+    }
+}
+
+const audio = new ArcadeAudio();
+
+// --- Canvas & Sizing Setup ---
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const previewHeroCanvas = document.getElementById('previewHero');
+const previewHeroCtx = previewHeroCanvas.getContext('2d');
+const previewBossCanvas = document.getElementById('previewBoss');
+const previewBossCtx = previewBossCanvas.getContext('2d');
+
+// Logical internal resolution for consistent physics & crisp cartoon art
+const WORLD_W = 900;
+const WORLD_H = 562;
+canvas.width = WORLD_W;
+canvas.height = WORLD_H;
+
+// --- Game State Variables ---
+let gameState = 'START'; // START, PLAYING, PAUSED, GAMEOVER
+let score = 0;
+let highScore = parseInt(localStorage.getItem('noPooPooHighScore') || '0', 10);
+let lives = 3;
+let wave = 1;
+let gameTime = 0;
+let screenShake = 0;
+let hitFlash = 0;
+
+// Input state
+const keys = {
+    left: false,
+    right: false,
+    up: false,
+    shield: false
+};
+
+// Entities
+const player = {
+    x: WORLD_W / 2,
+    y: WORLD_H - 74,
+    w: 58,
+    h: 82,
+    vx: 0,
+    vy: 0,
+    speed: 440,
+    jumpForce: -690,
+    gravity: 1850,
+    grounded: true,
+    facing: 1, // 1 right, -1 left
+    runCycle: 0,
+    shieldActive: false,
+    shieldEnergy: 100, // 0 to 100
+    invulnTimer: 0,
+    speedBoostTimer: 0,
+    expressionTimer: 0
+};
+
+const bossCar = {
+    x: WORLD_W / 2,
+    y: 122,
+    w: 176,
+    h: 118,
+    vx: 165,
+    targetX: WORLD_W / 2,
+    bobPhase: 0,
+    shootTimer: 1.2,
+    honkTimer: 6.0,
+    pigRecoil: 0,
+    patternCounter: 0
+};
+
+let projectiles = [];
+let powerups = [];
+let particles = [];
+let floatingTexts = [];
+let streetDecor = [];
+
+const FUNNY_QUOTES = [
+    '"The sign clearly said NO POO POO, buddy!"',
+    '"That pig in aviator shades has pinpoint accuracy!"',
+    '"Groovy VW Beetle: 1 — Clean Dashiki: 0."',
+    '"Pro tip: Hold up the No Poo Poo sign to bounce \'em back!"',
+    '"Even the llama at Lama Drama saw that splat!"'
+];
+
+// --- Initialize Ambient Autumn Street Leaves & Confetti ---
+function initStreetDecor() {
+    streetDecor = [];
+    const colors = ['#f97316', '#eab308', '#ef4444', '#3b82f6', '#22c55e', '#a855f7'];
+    for (let i = 0; i < 28; i++) {
+        streetDecor.push({
+            x: Math.random() * WORLD_W,
+            y: Math.random() * WORLD_H,
+            size: 4 + Math.random() * 6,
+            vx: -25 + Math.random() * 50,
+            vy: 25 + Math.random() * 45,
+            rot: Math.random() * Math.PI * 2,
+            vRot: -3 + Math.random() * 6,
+            color: colors[i % colors.length],
+            isLeaf: i % 2 === 0
+        });
+    }
+}
+
+// ============================================================================
+// CUSTOM CARTOON SPRITE RENDERERS (Matching Both Uploaded Reference Images)
+// ============================================================================
+
+/**
+ * Draws the cozy autumn boutique street background inspired by Image 2:
+ * - Twilight stormy/warm autumn sky with autumn foliage trees
+ * - Left storefront: "COUGARS - A Flirty Boutique" in pink with striped awning & heart
+ * - Right storefront: "LAMA DRAMA - Tees & Accessories" with cool sunglasses llama sign
+ * - Warm glowing vintage streetlamps with autumn leaf wreaths & wheat sheaves
+ * - Upper road bridge where the VW Beetle cruises & lower cobblestone sidewalk
+ */
+function drawBackground(ctx, t) {
+    // 1. Rich twilight autumn sky gradient
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, WORLD_H * 0.65);
+    skyGrad.addColorStop(0, '#27233a');
+    skyGrad.addColorStop(0.5, '#4b3b5c');
+    skyGrad.addColorStop(1, '#7c4d3e');
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, WORLD_W, WORLD_H);
+
+    // Subtle autumn tree canopy silhouettes behind shops
+    const treeColors = ['#7c2d12', '#9a3412', '#b45309', '#581c87'];
+    for (let i = 0; i < 9; i++) {
+        ctx.fillStyle = treeColors[i % treeColors.length];
+        ctx.beginPath();
+        ctx.arc(60 + i * 110, 68 + Math.sin(i * 2) * 14, 65, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // 2. Left Storefront: "COUGARS - A Flirty Boutique" (Pink building from Image 2)
+    ctx.save();
+    ctx.fillStyle = '#be4b78';
+    ctx.strokeStyle = '#3b0d22';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.roundRect(14, 52, 250, 390, 8);
+    ctx.fill();
+    ctx.stroke();
+
+    // Decorative roof trim & pink heart emblem
+    ctx.fillStyle = '#9d2b57';
+    ctx.fillRect(10, 46, 258, 18);
+    // Heart icon
+    ctx.fillStyle = '#e11d48';
+    ctx.beginPath();
+    ctx.moveTo(222, 72);
+    ctx.bezierCurveTo(222, 60, 204, 60, 204, 72);
+    ctx.bezierCurveTo(204, 84, 222, 94, 222, 100);
+    ctx.bezierCurveTo(222, 94, 240, 84, 240, 72);
+    ctx.bezierCurveTo(240, 60, 222, 60, 222, 72);
+    ctx.fill();
+    ctx.stroke();
+
+    // Signboard text
+    ctx.fillStyle = '#fda4af';
+    ctx.font = '900 28px "Fredoka One", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('COUGARS', 130, 102);
+    ctx.strokeStyle = '#4c0519';
+    ctx.lineWidth = 1.5;
+    ctx.strokeText('COUGARS', 130, 102);
+
+    ctx.fillStyle = '#ffe4e6';
+    ctx.font = 'italic 700 13px "Nunito", sans-serif';
+    ctx.fillText('A Flirty Boutique', 134, 122);
+
+    // Pink & White Striped Awning
+    const awningY = 132;
+    const stripeW = 24;
+    for (let s = 0; s < 10; s++) {
+        ctx.fillStyle = s % 2 === 0 ? '#db2777' : '#fce7f3';
+        ctx.beginPath();
+        ctx.roundRect(18 + s * stripeW, awningY, stripeW, 34, [0, 0, 8, 8]);
+        ctx.fill();
+        ctx.strokeStyle = '#500724';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+    }
+
+    // Warm Boutique Display Window
+    const winGrad = ctx.createLinearGradient(0, 175, 0, 360);
+    winGrad.addColorStop(0, '#4c1d4b');
+    winGrad.addColorStop(1, '#9d174d');
+    ctx.fillStyle = winGrad;
+    ctx.fillRect(32, 174, 212, 195);
+    ctx.strokeStyle = '#3b0d22';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(32, 174, 212, 195);
+
+    // Cute cartoon squirrel in heart sunglasses inside window (nod to Image 2)
+    ctx.fillStyle = '#b45309';
+    ctx.beginPath();
+    ctx.arc(92, 325, 22, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ec4899';
+    ctx.fillRect(76, 314, 14, 10);
+    ctx.fillRect(94, 314, 14, 10);
+    ctx.restore();
+
+    // 3. Center Archway / Overpass Road for the VW Beetle
+    ctx.save();
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(264, 90, 372, 350);
+
+    // Elevated brick bridge / upper road lane where the VW Beetle drives
+    ctx.fillStyle = '#334155';
+    ctx.fillRect(0, 168, WORLD_W, 26);
+    ctx.fillStyle = '#f59e0b';
+    for (let dash = 0; dash < WORLD_W; dash += 55) {
+        ctx.fillRect(dash + ((t * 90) % 55) - 55, 179, 28, 4);
+    }
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(0, 168, WORLD_W, 26);
+    ctx.restore();
+
+    // 4. Right Storefront: "LAMA DRAMA - Tees & Accessories" (Teal/Gold building from Image 2)
+    ctx.save();
+    ctx.fillStyle = '#115e59';
+    ctx.strokeStyle = '#042f2e';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.roundRect(636, 52, 250, 390, 8);
+    ctx.fill();
+    ctx.stroke();
+
+    // Wooden sign header
+    ctx.fillStyle = '#92400e';
+    ctx.fillRect(632, 46, 258, 18);
+
+    ctx.fillStyle = '#f43f5e';
+    ctx.font = '900 24px "Fredoka One", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('LAMA DRAMA', 745, 98);
+    ctx.strokeStyle = '#1e1b4b';
+    ctx.lineWidth = 1.5;
+    ctx.strokeText('LAMA DRAMA', 745, 98);
+
+    // Cool Sunglasses Llama Mascot on right side of sign
+    ctx.fillStyle = '#f5f5f4';
+    ctx.beginPath();
+    ctx.ellipse(842, 92, 16, 22, 0.1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    // Llama sunglasses
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(828, 84, 12, 7);
+    ctx.fillRect(842, 84, 12, 7);
+
+    // Wooden banner "Tees & Accessories"
+    ctx.fillStyle = '#d97706';
+    ctx.fillRect(652, 112, 214, 22);
+    ctx.strokeRect(652, 112, 214, 22);
+    ctx.fillStyle = '#fffbeb';
+    ctx.font = '800 12px "Nunito", sans-serif';
+    ctx.fillText('Tees & Accessories', 759, 127);
+
+    // Blue & White Striped Awning
+    for (let s = 0; s < 10; s++) {
+        ctx.fillStyle = s % 2 === 0 ? '#0284c7' : '#f0f9ff';
+        ctx.beginPath();
+        ctx.roundRect(640 + s * 24, 136, 24, 34, [0, 0, 8, 8]);
+        ctx.fill();
+        ctx.strokeStyle = '#082f49';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+    }
+
+    // Shop Window
+    ctx.fillStyle = '#134e4a';
+    ctx.fillRect(654, 176, 212, 195);
+    ctx.strokeStyle = '#042f2e';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(654, 176, 212, 195);
+    ctx.restore();
+
+    // 5. Warm Glowing Vintage Streetlamps (Left & Right)
+    drawStreetLamp(ctx, 56, 225, t);
+    drawStreetLamp(ctx, WORLD_W - 56, 225, t);
+
+    // 6. Ground Sidewalk & Cobblestone Running Lane
+    const groundY = WORLD_H - 68;
+    const roadGrad = ctx.createLinearGradient(0, groundY, 0, WORLD_H);
+    roadGrad.addColorStop(0, '#475569');
+    roadGrad.addColorStop(0.25, '#334155');
+    roadGrad.addColorStop(1, '#1e293b');
+    ctx.fillStyle = roadGrad;
+    ctx.fillRect(0, groundY, WORLD_W, 68);
+
+    // Curb highlight
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillRect(0, groundY, WORLD_W, 6);
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(0, groundY + 6, WORLD_W, 2);
+
+    // Scrolling sidewalk tiles for sense of speed
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.45)';
+    ctx.lineWidth = 2;
+    const tileOffset = (t * 60) % 60;
+    for (let gx = -60; gx < WORLD_W + 60; gx += 60) {
+        ctx.beginPath();
+        ctx.moveTo(gx - tileOffset, groundY + 8);
+        ctx.lineTo(gx - tileOffset - 18, WORLD_H);
+        ctx.stroke();
+    }
+}
+
+function drawStreetLamp(ctx, x, y, t) {
+    ctx.save();
+    // Lamp post
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(x - 5, y, 10, 268);
+    ctx.fillRect(x - 14, y + 256, 28, 14);
+
+    // Autumn leaf wreath around pole
+    ctx.strokeStyle = '#ea580c';
+    ctx.lineWidth = 7;
+    ctx.beginPath();
+    ctx.arc(x, y + 72, 16, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Warm lantern glow
+    const pulse = 0.85 + Math.sin(t * 5 + x) * 0.1;
+    const glow = ctx.createRadialGradient(x, y - 12, 4, x, y - 12, 58 * pulse);
+    glow.addColorStop(0, 'rgba(254, 240, 138, 0.95)');
+    glow.addColorStop(0.4, 'rgba(251, 146, 60, 0.45)');
+    glow.addColorStop(1, 'rgba(251, 146, 60, 0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(x, y - 12, 58 * pulse, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Lantern housing
+    ctx.fillStyle = '#fef08a';
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(x - 12, y - 24);
+    ctx.lineTo(x + 12, y - 24);
+    ctx.lineTo(x + 8, y);
+    ctx.lineTo(x - 8, y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Lantern cap
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath();
+    ctx.moveTo(x - 16, y - 24);
+    ctx.lineTo(x, y - 38);
+    ctx.lineTo(x + 16, y - 24);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+}
+
+/**
+ * Draws the Player Hero from Image 1:
+ * - Cheerful Black man with short curly black hair, mustache, goatee, bright smile
+ * - Vibrant blue, orange, yellow, and red geometric patterned dashiki shirt
+ * - Holding up the white "No Poo Poo" sign (raises it high as a shield when active!)
+ */
+function drawDashikiHero(ctx, x, y, facing, runCycle, shieldActive, invulnTimer, isPreview = false) {
+    ctx.save();
+    ctx.translate(x, y);
+
+    // Blink effect during invulnerability frames
+    if (!isPreview && invulnTimer > 0 && Math.floor(invulnTimer * 16) % 2 === 0) {
+        ctx.globalAlpha = 0.5;
+    }
+
+    // Ground shadow
+    if (!isPreview) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+        ctx.beginPath();
+        ctx.ellipse(0, 40, 26, 7, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    const legSwing = isPreview ? 0 : Math.sin(runCycle) * 12;
+    const bounce = isPreview ? 0 : Math.abs(Math.cos(runCycle)) * 4;
+
+    ctx.translate(0, -bounce);
+
+    // Legs & Sneakers
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = '#1e1b4b';
+    // Left leg
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath();
+    ctx.roundRect(-14, 16 + legSwing * 0.4, 11, 22, 4);
+    ctx.fill();
+    ctx.stroke();
+    // Left shoe
+    ctx.fillStyle = '#f97316';
+    ctx.beginPath();
+    ctx.roundRect(-17, 34 + legSwing * 0.4, 16, 8, 4);
+    ctx.fill();
+    ctx.stroke();
+
+    // Right leg
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath();
+    ctx.roundRect(3, 16 - legSwing * 0.4, 11, 22, 4);
+    ctx.fill();
+    ctx.stroke();
+    // Right shoe
+    ctx.fillStyle = '#f97316';
+    ctx.beginPath();
+    ctx.roundRect(1, 34 - legSwing * 0.4, 16, 8, 4);
+    ctx.fill();
+    ctx.stroke();
+
+    // Torso: Vibrant Blue, Orange, Yellow & Red Geometric Dashiki Shirt
+    ctx.fillStyle = '#0284c7'; // Rich royal blue base
+    ctx.beginPath();
+    ctx.roundRect(-22, -16, 44, 36, 8);
+    ctx.fill();
+    ctx.stroke();
+
+    // Dashiki Orange/Red side panels & zig-zag trim
+    ctx.fillStyle = '#ea580c';
+    ctx.fillRect(-20, -14, 9, 32);
+    ctx.fillRect(11, -14, 9, 32);
+
+    // Yellow & Red V-neck collar embroidery
+    ctx.fillStyle = '#facc15';
+    ctx.beginPath();
+    ctx.moveTo(-12, -16);
+    ctx.lineTo(0, 4);
+    ctx.lineTo(12, -16);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#dc2626';
+    ctx.beginPath();
+    ctx.moveTo(-7, -16);
+    ctx.lineTo(0, -3);
+    ctx.lineTo(7, -16);
+    ctx.closePath();
+    ctx.fill();
+
+    // Geometric zig-zag accents on dashiki
+    ctx.strokeStyle = '#fde047';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-18, -4);
+    ctx.lineTo(-14, 2);
+    ctx.lineTo(-18, 8);
+    ctx.moveTo(18, -4);
+    ctx.lineTo(14, 2);
+    ctx.lineTo(18, 8);
+    ctx.stroke();
+
+    // Head & Facial Features (Warm brown skin tone matching Image 1)
+    ctx.fillStyle = '#8d4925';
+    ctx.strokeStyle = '#271105';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.ellipse(0, -34, 18, 20, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Ears
+    ctx.beginPath();
+    ctx.arc(-18, -33, 4.5, 0, Math.PI * 2);
+    ctx.arc(18, -33, 4.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Curly short black hair
+    ctx.fillStyle = '#18181b';
+    ctx.beginPath();
+    ctx.arc(0, -42, 18.5, Math.PI * 0.95, Math.PI * 2.05);
+    ctx.fill();
+    // Curly texture bumps
+    for (let a = Math.PI; a <= Math.PI * 2; a += 0.32) {
+        ctx.beginPath();
+        ctx.arc(Math.cos(a) * 17.5, -41 + Math.sin(a) * 16.5, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // Expressive eyebrows
+    ctx.strokeStyle = '#18181b';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(-7, -40, 5, Math.PI * 1.15, Math.PI * 1.85);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(7, -40, 5, Math.PI * 1.15, Math.PI * 1.85);
+    ctx.stroke();
+
+    // Big cheerful cartoon eyes
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.ellipse(-7, -34, 4.8, 5.5, 0, 0, Math.PI * 2);
+    ctx.ellipse(7, -34, 4.8, 5.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    const lookOffset = facing * 1.3;
+    ctx.fillStyle = '#271105';
+    ctx.beginPath();
+    ctx.arc(-7 + lookOffset, -34, 2.5, 0, Math.PI * 2);
+    ctx.arc(7 + lookOffset, -34, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Eye catchlights
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(-8 + lookOffset, -35.5, 1, 0, Math.PI * 2);
+    ctx.arc(6 + lookOffset, -35.5, 1, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Nose
+    ctx.strokeStyle = '#3e1c0a';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, -28, 4, 0.1 * Math.PI, 0.9 * Math.PI);
+    ctx.stroke();
+
+    // Mustache & Goatee
+    ctx.fillStyle = '#18181b';
+    ctx.beginPath();
+    ctx.ellipse(0, -23.5, 9, 2, 0, Math.PI, Math.PI * 2);
+    ctx.fill();
+
+    // Big Joyful Smile
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(0, -22, 8.5, 0.05 * Math.PI, 0.95 * Math.PI);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Goatee beard chin strap
+    ctx.strokeStyle = '#18181b';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, -22, 11.5, 0.2 * Math.PI, 0.8 * Math.PI);
+    ctx.stroke();
+
+    // White "No Poo Poo" Sign held in hands (or raised overhead when shielding!)
+    const signY = shieldActive ? -56 : -2;
+    const signW = shieldActive ? 74 : 52;
+    const signH = shieldActive ? 34 : 26;
+
+    if (shieldActive) {
+        // Glowing blue/gold energy aura around raised shield sign
+        const aura = ctx.createRadialGradient(0, signY + signH / 2, 8, 0, signY + signH / 2, 56);
+        aura.addColorStop(0, 'rgba(56, 189, 248, 0.75)');
+        aura.addColorStop(0.6, 'rgba(250, 204, 21, 0.45)');
+        aura.addColorStop(1, 'rgba(56, 189, 248, 0)');
+        ctx.fillStyle = aura;
+        ctx.beginPath();
+        ctx.arc(0, signY + signH / 2, 56, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // White Sign Board
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.roundRect(-signW / 2, signY, signW, signH, 5);
+    ctx.fill();
+    ctx.stroke();
+
+    // Sign Text: "No Poo Poo"
+    ctx.fillStyle = '#0f172a';
+    ctx.font = shieldActive ? '900 12px "Fredoka One", sans-serif' : '900 9.5px "Fredoka One", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('No Poo', 0, signY + signH * 0.44);
+    ctx.fillText('Poo', 0, signY + signH * 0.84);
+
+    // Hands gripping left & right edges of the sign
+    ctx.fillStyle = '#8d4925';
+    ctx.beginPath();
+    ctx.arc(-signW / 2 - 1, signY + signH * 0.5, 5, 0, Math.PI * 2);
+    ctx.arc(signW / 2 + 1, signY + signH * 0.5, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.restore();
+}
+
+/**
+ * Draws the Antagonist Psychedelic Tie-Dye VW Beetle from Image 2:
+ * - Rainbow tie-dye paint job with peace signs & daisy flowers on fenders
+ * - Roof rack loaded with green suitcase, peace medallion & colorful rolled gear
+ * - Windshield featuring the brown-haired driver AND the cool pig wearing aviator sunglasses!
+ */
+function drawTieDyeBeetle(ctx, x, y, t, pigRecoil, isPreview = false) {
+    ctx.save();
+    const bob = isPreview ? 0 : Math.sin(t * 6) * 4;
+    ctx.translate(x, y + bob);
+
+    // 1. Roof Rack & Colorful Luggage (matching top of Image 2)
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(-48, -62, 96, 14);
+
+    // Left purple swirl sleeping bag roll
+    ctx.fillStyle = '#7e22ce';
+    ctx.strokeStyle = '#1e1b4b';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(-44, -64, 13, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Center green trunk suitcase with gold straps
+    ctx.fillStyle = '#15803d';
+    ctx.beginPath();
+    ctx.roundRect(-28, -76, 48, 24, 4);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#d97706';
+    ctx.fillRect(-20, -76, 5, 24);
+    ctx.fillRect(7, -76, 5, 24);
+
+    // Right rainbow swirl bundle
+    ctx.fillStyle = '#ec4899';
+    ctx.beginPath();
+    ctx.arc(36, -64, 13, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#facc15';
+    ctx.beginPath();
+    ctx.arc(36, -64, 6, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 2. VW Beetle Psychedelic Tie-Dye Cabin & Fenders
+    const tieDye = ctx.createLinearGradient(-85, -45, 85, 45);
+    tieDye.addColorStop(0, '#ef4444');
+    tieDye.addColorStop(0.22, '#facc15');
+    tieDye.addColorStop(0.45, '#22c55e');
+    tieDye.addColorStop(0.68, '#06b6d4');
+    tieDye.addColorStop(0.88, '#a855f7');
+    tieDye.addColorStop(1, '#ec4899');
+
+    // Upper curved Beetle roof
+    ctx.fillStyle = tieDye;
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-58, -8);
+    ctx.quadraticCurveTo(-52, -52, 0, -52);
+    ctx.quadraticCurveTo(52, -52, 58, -8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // 3. Large Front Windshield with Pig (Left) & Driver Guy (Right)
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath();
+    ctx.roundRect(-48, -42, 96, 34, [18, 18, 6, 6]);
+    ctx.fill();
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    // --- Character A: Cool Pink Pig Wearing Aviator Sunglasses (Left side of windshield) ---
+    ctx.save();
+    ctx.translate(-22, -22 - pigRecoil * 4);
+    // Pig ears
+    ctx.fillStyle = '#f9a8d4';
+    ctx.strokeStyle = '#831843';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(-12, -10);
+    ctx.lineTo(-16, -20);
+    ctx.lineTo(-5, -14);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(12, -10);
+    ctx.lineTo(16, -20);
+    ctx.lineTo(5, -14);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Pig head
+    ctx.fillStyle = '#fbcfe8';
+    ctx.beginPath();
+    ctx.ellipse(0, -3, 14, 13, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Aviator Sunglasses
+    ctx.fillStyle = '#0f172a';
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 1.3;
+    ctx.beginPath();
+    ctx.roundRect(-12, -9, 10, 7, 2);
+    ctx.roundRect(2, -9, 10, 7, 2);
+    ctx.fill();
+    ctx.stroke();
+    // Nose bridge
+    ctx.beginPath();
+    ctx.moveTo(-2, -7);
+    ctx.lineTo(2, -7);
+    ctx.stroke();
+
+    // Pig Snout
+    ctx.fillStyle = '#f472b6';
+    ctx.beginPath();
+    ctx.ellipse(0, 2, 6, 4.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#831843';
+    ctx.beginPath();
+    ctx.arc(-2.2, 2, 1.2, 0, Math.PI * 2);
+    ctx.arc(2.2, 2, 1.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // --- Character B: Brown-Haired Guy Smiling in Passenger/Driver Seat (Right side) ---
+    ctx.save();
+    ctx.translate(22, -21);
+    // Face
+    ctx.fillStyle = '#f5d0b5';
+    ctx.strokeStyle = '#451a03';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.ellipse(0, -2, 11.5, 13, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    // Short brown hair
+    ctx.fillStyle = '#5c3a21';
+    ctx.beginPath();
+    ctx.arc(0, -6, 11.5, Math.PI, Math.PI * 2);
+    ctx.fill();
+    // Eyes & happy grin
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath();
+    ctx.arc(-4, -3, 1.5, 0, Math.PI * 2);
+    ctx.arc(4, -3, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(0, 2, 4.5, 0.1 * Math.PI, 0.9 * Math.PI);
+    ctx.stroke();
+    ctx.restore();
+
+    // Rearview mirror & wipers
+    ctx.fillStyle = '#cbd5e1';
+    ctx.fillRect(-8, -39, 16, 4);
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-32, -8);
+    ctx.lineTo(-14, -14);
+    ctx.moveTo(8, -8);
+    ctx.lineTo(26, -14);
+    ctx.stroke();
+
+    // 4. Lower Tie-Dye VW Hood & Curved Fenders
+    ctx.fillStyle = tieDye;
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 3;
+    // Left & Right Bulbous Fenders
+    ctx.beginPath();
+    ctx.ellipse(-62, 16, 24, 26, -0.15, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.ellipse(62, 16, 24, 26, 0.15, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Center Sloping VW Hood
+    ctx.beginPath();
+    ctx.moveTo(-48, -8);
+    ctx.lineTo(48, -8);
+    ctx.lineTo(54, 34);
+    ctx.lineTo(-54, 34);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Peace Signs on Fenders (matching Image 2)
+    drawPeaceSign(ctx, -64, 24, 10);
+    drawPeaceSign(ctx, 64, 24, 10);
+
+    // Pink Daisy Flower Decal on Hood
+    ctx.fillStyle = '#f472b6';
+    for (let p = 0; p < 6; p++) {
+        const ang = (p * Math.PI) / 3;
+        ctx.beginPath();
+        ctx.arc(-22 + Math.cos(ang) * 6, 12 + Math.sin(ang) * 6, 4, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.fillStyle = '#facc15';
+    ctx.beginPath();
+    ctx.arc(-22, 12, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Classic Round VW Headlights
+    ctx.fillStyle = '#fef9c3';
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(-62, 6, 10, 0, Math.PI * 2);
+    ctx.arc(62, 6, 10, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Chrome Front Bumper
+    ctx.fillStyle = '#e2e8f0';
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.roundRect(-84, 32, 168, 10, 5);
+    ctx.fill();
+    ctx.stroke();
+
+    // Side Mirrors
+    ctx.fillStyle = '#cbd5e1';
+    ctx.beginPath();
+    ctx.arc(-64, -16, 7, 0, Math.PI * 2);
+    ctx.arc(64, -16, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.restore();
+}
+
+function drawPeaceSign(ctx, x, y, r) {
+    ctx.save();
+    ctx.strokeStyle = '#1e1b4b';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.moveTo(x, y - r);
+    ctx.lineTo(x, y + r);
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - r * 0.7, y + r * 0.7);
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + r * 0.7, y + r * 0.7);
+    ctx.stroke();
+    ctx.restore();
+}
+
+/**
+ * Draws a comical swirling cartoon Poo Projectile with stink lines & googly eyes!
+ */
+function drawPooProjectile(ctx, p, t) {
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rot);
+    const s = p.radius / 18;
+    ctx.scale(s, s);
+
+    // Wavy stink lines above
+    ctx.strokeStyle = 'rgba(163, 230, 53, 0.85)';
+    ctx.lineWidth = 2;
+    for (let i = -1; i <= 1; i += 2) {
+        ctx.beginPath();
+        ctx.moveTo(i * 7, -18);
+        ctx.quadraticCurveTo(i * 11, -24, i * 6, -30);
+        ctx.stroke();
+    }
+
+    // Swirling brown tiers
+    ctx.fillStyle = p.isMega ? '#5c2d16' : '#78350f';
+    ctx.strokeStyle = '#271105';
+    ctx.lineWidth = 2.2;
+
+    // Bottom tier
+    ctx.beginPath();
+    ctx.roundRect(-18, 4, 36, 12, 8);
+    ctx.fill();
+    ctx.stroke();
+
+    // Middle tier
+    ctx.beginPath();
+    ctx.roundRect(-13, -5, 26, 11, 7);
+    ctx.fill();
+    ctx.stroke();
+
+    // Top swirl tip
+    ctx.beginPath();
+    ctx.moveTo(-8, -5);
+    ctx.quadraticCurveTo(-6, -16, 4, -18);
+    ctx.quadraticCurveTo(3, -10, 9, -5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Googly cartoon eyes
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(-5, 2, 3.8, 0, Math.PI * 2);
+    ctx.arc(5, 2, 3.8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.arc(-4.5, 2.5, 1.8, 0, Math.PI * 2);
+    ctx.arc(5.5, 2.5, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+}
+
+/**
+ * Draws Collectible Power-ups (Mini No Poo Poo Sign, Golden TP Roll, Sparkly Soap)
+ */
+function drawPowerup(ctx, item, t) {
+    ctx.save();
+    const bob = Math.sin(t * 7 + item.x) * 4;
+    ctx.translate(item.x, item.y + bob);
+
+    // Radiant glow aura
+    const glow = ctx.createRadialGradient(0, 0, 4, 0, 0, 26);
+    glow.addColorStop(0, 'rgba(253, 224, 71, 0.85)');
+    glow.addColorStop(1, 'rgba(253, 224, 71, 0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(0, 0, 26, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.font = '26px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    if (item.type === 'SIGN') {
+        // Mini white No Poo Poo shield recharge sign
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = '#0284c7';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.roundRect(-16, -12, 32, 24, 4);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#0f172a';
+        ctx.font = '900 8px "Fredoka One", sans-serif';
+        ctx.fillText('NO POO', 0, 1);
+    } else if (item.type === 'TP') {
+        ctx.fillText('🧻', 0, 1);
+    } else if (item.type === 'HEART') {
+        ctx.fillText('❤️', 0, 1);
+    } else {
+        ctx.fillText('🧼', 0, 1);
+    }
+    ctx.restore();
+}
+
+// ============================================================================
+// PARTICLE & FLOATING TEXT HELPERS
+// ============================================================================
+
+function spawnSplat(x, y, color = '#78350f', count = 14) {
+    for (let i = 0; i < count; i++) {
+        const ang = Math.random() * Math.PI * 2;
+        const spd = 70 + Math.random() * 240;
+        particles.push({
+            x,
+            y,
+            vx: Math.cos(ang) * spd,
+            vy: Math.sin(ang) * spd - 60,
+            r: 3 + Math.random() * 6,
+            color,
+            life: 0.45 + Math.random() * 0.35,
+            maxLife: 0.8
+        });
+    }
+}
+
+function addFloatingText(x, y, text, color = '#fde047') {
+    floatingTexts.push({
+        x,
+        y,
+        text,
+        color,
+        life: 0.95
+    });
+}
+
+// ============================================================================
+// CORE GAMEPLAY LOOP & LOGIC
+// ============================================================================
+
+function resetGame() {
+    score = 0;
+    lives = 3;
+    wave = 1;
+    gameTime = 0;
+    screenShake = 0;
+    hitFlash = 0;
+
+    player.x = WORLD_W / 2;
+    player.y = WORLD_H - 74;
+    player.vx = 0;
+    player.vy = 0;
+    player.grounded = true;
+    player.shieldActive = false;
+    player.shieldEnergy = 100;
+    player.invulnTimer = 0;
+    player.speedBoostTimer = 0;
+
+    bossCar.x = WORLD_W / 2;
+    bossCar.vx = 180;
+    bossCar.shootTimer = 1.0;
+    bossCar.honkTimer = 5.0;
+    bossCar.patternCounter = 0;
+
+    projectiles = [];
+    powerups = [];
+    particles = [];
+    floatingTexts = [];
+    initStreetDecor();
+    updateHud();
+}
+
+function startGame() {
+    resetGame();
+    gameState = 'PLAYING';
+    document.getElementById('start-screen').classList.add('hidden');
+    document.getElementById('gameover-screen').classList.add('hidden');
+    document.getElementById('pause-screen').classList.add('hidden');
+    document.getElementById('hud-overlay').classList.remove('hidden');
+    document.getElementById('pause-btn').classList.remove('hidden');
+    audio.playHonk();
+    audio.startBgm();
+}
+
+function togglePause() {
+    if (gameState === 'PLAYING') {
+        gameState = 'PAUSED';
+        audio.stopBgm();
+        document.getElementById('pause-screen').classList.remove('hidden');
+        document.getElementById('pause-btn').textContent = '▶ RESUME';
+    } else if (gameState === 'PAUSED') {
+        gameState = 'PLAYING';
+        audio.startBgm();
+        document.getElementById('pause-screen').classList.add('hidden');
+        document.getElementById('pause-btn').textContent = '⏸ PAUSE';
+    }
+}
+
+function triggerGameOver() {
+    gameState = 'GAMEOVER';
+    audio.stopBgm();
+    audio.playGameOver();
+
+    if (score > highScore) {
+        highScore = Math.floor(score);
+        localStorage.setItem('noPooPooHighScore', highScore.toString());
+    }
+
+    document.getElementById('final-score').textContent = Math.floor(score);
+    document.getElementById('final-best').textContent = highScore;
+    document.getElementById('funny-quote').textContent =
+        FUNNY_QUOTES[Math.floor(Math.random() * FUNNY_QUOTES.length)];
+    document.getElementById('gameover-screen').classList.remove('hidden');
+    document.getElementById('pause-btn').classList.add('hidden');
+}
+
+function updateHud() {
+    document.getElementById('score-display').textContent = Math.floor(score);
+    document.getElementById('highscore-display').textContent = Math.max(highScore, Math.floor(score));
+    document.getElementById('hearts-display').textContent = '❤️'.repeat(Math.max(0, lives)) + '🖤'.repeat(Math.max(0, 3 - lives));
+    document.getElementById('shield-bar').style.width = `${Math.max(0, Math.min(100, player.shieldEnergy))}%`;
+    document.getElementById('wave-display').textContent = `WAVE ${wave}`;
+
+    const moods = ['CRUISING', 'GROOVY SPEED', 'TURBO PIG!', 'MEGA CHAOS!'];
+    document.getElementById('speed-badge').textContent = moods[Math.min(moods.length - 1, wave - 1)];
+}
+
+function spawnBossVolley() {
+    bossCar.pigRecoil = 1.0;
+    bossCar.patternCounter++;
+    audio.playShoot();
+
+    const originX = bossCar.x - 22; // Pig's side of the VW Beetle
+    const originY = bossCar.y + 10;
+    const baseSpeed = 240 + Math.min(260, wave * 32);
+
+    // Every 4th volley at Wave 2+: 3-way spread shot!
+    if (wave >= 2 && bossCar.patternCounter % 4 === 0) {
+        [-0.28, 0, 0.28].forEach((angleOffset) => {
+            const aimAngle = Math.PI / 2 + angleOffset;
+            projectiles.push({
+                x: originX,
+                y: originY,
+                vx: Math.cos(aimAngle) * baseSpeed,
+                vy: Math.sin(aimAngle) * baseSpeed,
+                radius: 17,
+                rot: 0,
+                vRot: -4 + Math.random() * 8,
+                isMega: false,
+                deflected: false
+            });
+        });
+    }
+    // Every 6th volley at Wave 3+: Giant Mega-Poo!
+    else if (wave >= 3 && bossCar.patternCounter % 6 === 0) {
+        const dx = player.x - originX;
+        const dy = player.y - originY;
+        const dist = Math.hypot(dx, dy) || 1;
+        projectiles.push({
+            x: originX,
+            y: originY,
+            vx: (dx / dist) * (baseSpeed * 0.85),
+            vy: (dy / dist) * (baseSpeed * 0.85),
+            radius: 28,
+            rot: 0,
+            vRot: 3,
+            isMega: true,
+            deflected: false
+        });
+    }
+    // Standard aimed shot toward the running Dashiki Hero
+    else {
+        const leadX = player.x + player.vx * 0.22 + (-35 + Math.random() * 70);
+        const dx = leadX - originX;
+        const dy = player.y - originY;
+        const dist = Math.hypot(dx, dy) || 1;
+        projectiles.push({
+            x: originX,
+            y: originY,
+            vx: (dx / dist) * baseSpeed,
+            vy: (dy / dist) * baseSpeed,
+            radius: 17,
+            rot: 0,
+            vRot: -5 + Math.random() * 10,
+            isMega: false,
+            deflected: false
+        });
+    }
+
+    // Periodically drop a helpful power-up
+    if (bossCar.patternCounter % 5 === 0 && powerups.length < 2) {
+        const types = ['TP', 'SOAP', 'SIGN'];
+        if (lives < 3 && Math.random() < 0.25) types.push('HEART');
+        const chosen = types[Math.floor(Math.random() * types.length)];
+        powerups.push({
+            x: 90 + Math.random() * (WORLD_W - 180),
+            y: 195,
+            vy: 155,
+            type: chosen,
+            radius: 18
+        });
+    }
+}
+
+function update(dt) {
+    gameTime += dt;
+
+    // Update ambient autumn leaves/confetti
+    streetDecor.forEach((d) => {
+        d.x += d.vx * dt;
+        d.y += d.vy * dt;
+        d.rot += d.vRot * dt;
+        if (d.y > WORLD_H) {
+            d.y = -10;
+            d.x = Math.random() * WORLD_W;
+        }
+        if (d.x < -10) d.x = WORLD_W + 10;
+        if (d.x > WORLD_W + 10) d.x = -10;
+    });
+
+    if (gameState !== 'PLAYING') return;
+
+    // Survival score & wave escalation
+    score += dt * (15 + wave * 5);
+    wave = 1 + Math.floor(gameTime / 14);
+
+    if (screenShake > 0) screenShake = Math.max(0, screenShake - dt * 28);
+    if (hitFlash > 0) hitFlash = Math.max(0, hitFlash - dt * 2.5);
+    if (player.invulnTimer > 0) player.invulnTimer = Math.max(0, player.invulnTimer - dt);
+    if (player.speedBoostTimer > 0) player.speedBoostTimer = Math.max(0, player.speedBoostTimer - dt);
+
+    // --- Player Movement ---
+    const currentSpeed = player.speed * (player.speedBoostTimer > 0 ? 1.38 : 1.0);
+    if (keys.left && !keys.right) {
+        player.vx = -currentSpeed;
+        player.facing = -1;
+    } else if (keys.right && !keys.left) {
+        player.vx = currentSpeed;
+        player.facing = 1;
+    } else {
+        player.vx *= 0.78;
+        if (Math.abs(player.vx) < 8) player.vx = 0;
+    }
+
+    // Jump Dash
+    if (keys.up && player.grounded) {
+        player.vy = player.jumpForce;
+        player.grounded = false;
+        audio.playJump();
+        spawnSplat(player.x, player.y + 36, '#fde047', 6);
+    }
+
+    // Sign Shield Activation & Energy Drain/Recharge
+    if (keys.shield && player.shieldEnergy > 5) {
+        player.shieldActive = true;
+        player.shieldEnergy = Math.max(0, player.shieldEnergy - dt * 36);
+        if (player.shieldEnergy <= 1) {
+            player.shieldActive = false;
+        }
+    } else {
+        player.shieldActive = false;
+        player.shieldEnergy = Math.min(100, player.shieldEnergy + dt * 14);
+    }
+
+    player.x += player.vx * dt;
+    player.y += player.vy * dt;
+    player.vy += player.gravity * dt;
+
+    const floorY = WORLD_H - 74;
+    if (player.y >= floorY) {
+        player.y = floorY;
+        player.vy = 0;
+        player.grounded = true;
+    }
+
+    // Clamp player within street bounds
+    player.x = Math.max(42, Math.min(WORLD_W - 42, player.x));
+
+    if (Math.abs(player.vx) > 20 && player.grounded) {
+        player.runCycle += dt * 15;
+    } else {
+        player.runCycle = 0;
+    }
+
+    // --- Boss VW Beetle AI ---
+    const carSpeed = 195 + Math.min(240, wave * 28);
+    bossCar.x += Math.sign(bossCar.vx) * carSpeed * dt;
+    if (bossCar.x > WORLD_W - 110) {
+        bossCar.x = WORLD_W - 110;
+        bossCar.vx = -Math.abs(carSpeed);
+    } else if (bossCar.x < 110) {
+        bossCar.x = 110;
+        bossCar.vx = Math.abs(carSpeed);
+    }
+
+    if (bossCar.pigRecoil > 0) {
+        bossCar.pigRecoil = Math.max(0, bossCar.pigRecoil - dt * 4);
+    }
+
+    bossCar.shootTimer -= dt;
+    if (bossCar.shootTimer <= 0) {
+        spawnBossVolley();
+        bossCar.shootTimer = Math.max(0.45, 1.35 - wave * 0.11);
+    }
+
+    bossCar.honkTimer -= dt;
+    if (bossCar.honkTimer <= 0) {
+        audio.playHonk();
+        addFloatingText(bossCar.x, bossCar.y - 68, 'BEEP BEEP! 🐷', '#f472b6');
+        bossCar.honkTimer = 7 + Math.random() * 4;
+    }
+
+    // --- Update Poo Projectiles ---
+    for (let i = projectiles.length - 1; i >= 0; i--) {
+        const p = projectiles[i];
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.rot += p.vRot * dt;
+
+        // Check Shield Deflection if player is holding up the "No Poo Poo" sign!
+        if (!p.deflected && player.shieldActive) {
+            const shieldCenterY = player.y - 44;
+            const dx = p.x - player.x;
+            const dy = p.y - shieldCenterY;
+            if (Math.abs(dx) < 46 + p.radius && Math.abs(dy) < 24 + p.radius) {
+                p.deflected = true;
+                p.vy = -Math.abs(p.vy) * 1.35;
+                p.vx = (p.x - player.x) * 4;
+                score += 50;
+                audio.playShieldBlock();
+                spawnSplat(p.x, p.y, '#38bdf8', 10);
+                addFloatingText(p.x, p.y - 15, 'BLOCKED! +50', '#38bdf8');
+                continue;
+            }
+        }
+
+        // Check Hit on Player
+        if (!p.deflected && player.invulnTimer <= 0) {
+            const dx = p.x - player.x;
+            const dy = p.y - (player.y - 12);
+            const hitDist = p.radius + 20;
+            if (dx * dx + dy * dy < hitDist * hitDist) {
+                projectiles.splice(i, 1);
+                lives--;
+                player.invulnTimer = 1.6;
+                screenShake = 14;
+                hitFlash = 0.75;
+                audio.playSplat();
+                spawnSplat(player.x, player.y - 15, '#78350f', 22);
+                addFloatingText(player.x, player.y - 55, 'SPLAT! -1 ❤️', '#ef4444');
+                updateHud();
+                if (lives <= 0) {
+                    triggerGameOver();
+                    return;
+                }
+                continue;
+            }
+        }
+
+        // Splat on street sidewalk
+        if (p.y >= WORLD_H - 64) {
+            spawnSplat(p.x, WORLD_H - 64, '#78350f', p.isMega ? 18 : 10);
+            projectiles.splice(i, 1);
+            continue;
+        }
+
+        // Offscreen cleanup
+        if (p.y < -80 || p.x < -80 || p.x > WORLD_W + 80) {
+            projectiles.splice(i, 1);
+        }
+    }
+
+    // --- Update Power-ups ---
+    for (let i = powerups.length - 1; i >= 0; i--) {
+        const item = powerups[i];
+        item.y += item.vy * dt;
+        if (item.y > WORLD_H - 82) {
+            item.y = WORLD_H - 82;
+        }
+
+        const dx = item.x - player.x;
+        const dy = item.y - (player.y - 12);
+        if (dx * dx + dy * dy < 44 * 44) {
+            audio.playPowerup();
+            spawnSplat(item.x, item.y, '#fde047', 12);
+            if (item.type === 'SIGN') {
+                player.shieldEnergy = 100;
+                score += 100;
+                addFloatingText(item.x, item.y - 20, 'FULL SHIELD! +100', '#38bdf8');
+            } else if (item.type === 'TP') {
+                score += 200;
+                addFloatingText(item.x, item.y - 20, 'GOLDEN TP! +200', '#fde047');
+            } else if (item.type === 'SOAP') {
+                player.speedBoostTimer = 5.0;
+                score += 150;
+                addFloatingText(item.x, item.y - 20, 'SPEED BOOST! +150', '#a7f3d0');
+            } else if (item.type === 'HEART') {
+                lives = Math.min(3, lives + 1);
+                score += 150;
+                addFloatingText(item.x, item.y - 20, 'EXTRA HEART! ❤️', '#fb7185');
+            }
+            powerups.splice(i, 1);
+            updateHud();
+        }
+    }
+
+    // --- Update Particles & Floating Texts ---
+    for (let i = particles.length - 1; i >= 0; i--) {
+        const pt = particles[i];
+        pt.x += pt.vx * dt;
+        pt.y += pt.vy * dt;
+        pt.vy += 450 * dt;
+        pt.life -= dt;
+        if (pt.life <= 0) particles.splice(i, 1);
+    }
+
+    for (let i = floatingTexts.length - 1; i >= 0; i--) {
+        const ft = floatingTexts[i];
+        ft.y -= 48 * dt;
+        ft.life -= dt;
+        if (ft.life <= 0) floatingTexts.splice(i, 1);
+    }
+
+    updateHud();
+}
+
+function render() {
+    ctx.save();
+
+    // Camera impact shake
+    if (screenShake > 0) {
+        const sx = (-0.5 + Math.random()) * screenShake;
+        const sy = (-0.5 + Math.random()) * screenShake;
+        ctx.translate(sx, sy);
+    }
+
+    // 1. Autumn Town Street Background
+    drawBackground(ctx, gameTime);
+
+    // 2. Drifting Autumn Leaves & Confetti (from Image 1 & 2)
+    streetDecor.forEach((d) => {
+        ctx.save();
+        ctx.translate(d.x, d.y);
+        ctx.rotate(d.rot);
+        ctx.fillStyle = d.color;
+        if (d.isLeaf) {
+            ctx.beginPath();
+            ctx.ellipse(0, 0, d.size, d.size * 0.5, 0, 0, Math.PI * 2);
+            ctx.fill();
+        } else {
+            ctx.fillRect(-d.size * 0.6, -d.size * 0.3, d.size * 1.2, d.size * 0.6);
+        }
+        ctx.restore();
+    });
+
+    // 3. Antagonist Psychedelic VW Beetle with Pig & Driver
+    drawTieDyeBeetle(ctx, bossCar.x, bossCar.y, gameTime, bossCar.pigRecoil, false);
+
+    // 4. Power-ups
+    powerups.forEach((item) => drawPowerup(ctx, item, gameTime));
+
+    // 5. Player Hero in Geometric Dashiki
+    drawDashikiHero(
+        ctx,
+        player.x,
+        player.y,
+        player.facing,
+        player.runCycle,
+        player.shieldActive,
+        player.invulnTimer,
+        false
+    );
+
+    // 6. Swirling Cartoon Poo Projectiles
+    projectiles.forEach((p) => drawPooProjectile(ctx, p, gameTime));
+
+    // 7. Splat & Sparkle Particles
+    particles.forEach((pt) => {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, pt.life / pt.maxLife);
+        ctx.fillStyle = pt.color;
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    });
+
+    // 8. Floating Arcade Score Popups
+    floatingTexts.forEach((ft) => {
+        ctx.save();
+        ctx.globalAlpha = Math.min(1, ft.life * 1.5);
+        ctx.font = '900 17px "Fredoka One", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 4;
+        ctx.strokeText(ft.text, ft.x, ft.y);
+        ctx.fillStyle = ft.color;
+        ctx.fillText(ft.text, ft.x, ft.y);
+        ctx.restore();
+    });
+
+    // Damage screen tint flash
+    if (hitFlash > 0) {
+        ctx.fillStyle = `rgba(120, 53, 15, ${hitFlash * 0.38})`;
+        ctx.fillRect(0, 0, WORLD_W, WORLD_H);
+    }
+
+    ctx.restore();
+}
+
+// Render Start Screen Character Previews
+function renderStartPreviews() {
+    previewHeroCtx.clearRect(0, 0, 90, 90);
+    previewHeroCtx.save();
+    previewHeroCtx.scale(0.95, 0.95);
+    drawDashikiHero(previewHeroCtx, 47, 56, 1, 0, false, 0, true);
+    previewHeroCtx.restore();
+
+    previewBossCtx.clearRect(0, 0, 110, 90);
+    previewBossCtx.save();
+    previewBossCtx.scale(0.55, 0.55);
+    drawTieDyeBeetle(previewBossCtx, 100, 98, 0, 0, true);
+    previewBossCtx.restore();
+}
+
+// ============================================================================
+// INPUT HANDLING (Keyboard, Touch Buttons, & Canvas Drag/Tap)
+// ============================================================================
+
+window.addEventListener('keydown', (e) => {
+    if (['ArrowLeft', 'KeyA'].includes(e.code)) keys.left = true;
+    if (['ArrowRight', 'KeyD'].includes(e.code)) keys.right = true;
+    if (['ArrowUp', 'KeyW', 'Space'].includes(e.code)) {
+        e.preventDefault();
+        keys.up = true;
+    }
+    if (['ArrowDown', 'KeyS', 'ShiftLeft', 'ShiftRight'].includes(e.code)) {
+        keys.shield = true;
+    }
+    if (e.code === 'KeyP' || e.code === 'Escape') {
+        if (gameState === 'PLAYING' || gameState === 'PAUSED') togglePause();
+    }
+});
+
+window.addEventListener('keyup', (e) => {
+    if (['ArrowLeft', 'KeyA'].includes(e.code)) keys.left = false;
+    if (['ArrowRight', 'KeyD'].includes(e.code)) keys.right = false;
+    if (['ArrowUp', 'KeyW', 'Space'].includes(e.code)) keys.up = false;
+    if (['ArrowDown', 'KeyS', 'ShiftLeft', 'ShiftRight'].includes(e.code)) keys.shield = false;
+});
+
+// Helper to bind hold-down buttons for both touch and mouse
+function bindHoldButton(btnId, keyName) {
+    const btn = document.getElementById(btnId);
+    const press = (e) => {
+        e.preventDefault();
+        keys[keyName] = true;
+    };
+    const release = (e) => {
+        e.preventDefault();
+        keys[keyName] = false;
+    };
+    btn.addEventListener('mousedown', press);
+    btn.addEventListener('mouseup', release);
+    btn.addEventListener('mouseleave', release);
+    btn.addEventListener('touchstart', press, { passive: false });
+    btn.addEventListener('touchend', release, { passive: false });
+    btn.addEventListener('touchcancel', release, { passive: false });
+}
+
+bindHoldButton('btn-left', 'left');
+bindHoldButton('btn-right', 'right');
+bindHoldButton('btn-jump', 'up');
+bindHoldButton('btn-shield', 'shield');
+
+// Direct Touch/Mouse Drag on Canvas for intuitive mobile control
+let pointerActive = false;
+function handleCanvasPointer(clientX, clientY) {
+    if (gameState !== 'PLAYING') return;
+    const rect = canvas.getBoundingClientRect();
+    const relX = ((clientX - rect.left) / rect.width) * WORLD_W;
+    const relY = ((clientY - rect.top) / rect.height) * WORLD_H;
+
+    // Smoothly steer player toward pointer X
+    const diff = relX - player.x;
+    if (Math.abs(diff) > 12) {
+        keys.left = diff < 0;
+        keys.right = diff > 0;
+    } else {
+        keys.left = false;
+        keys.right = false;
+    }
+
+    // Swiping/tapping higher up triggers jump
+    if (relY < WORLD_H * 0.65 && player.grounded) {
+        keys.up = true;
+        setTimeout(() => { keys.up = false; }, 120);
+    }
+}
+
+canvas.addEventListener('mousedown', (e) => {
+    pointerActive = true;
+    handleCanvasPointer(e.clientX, e.clientY);
+});
+window.addEventListener('mousemove', (e) => {
+    if (pointerActive) handleCanvasPointer(e.clientX, e.clientY);
+});
+window.addEventListener('mouseup', () => {
+    if (pointerActive) {
+        pointerActive = false;
+        keys.left = false;
+        keys.right = false;
+    }
+});
+
+canvas.addEventListener('touchstart', (e) => {
+    if (e.touches.length > 0) {
+        pointerActive = true;
+        handleCanvasPointer(e.touches[0].clientX, e.touches[0].clientY);
+    }
+}, { passive: false });
+
+canvas.addEventListener('touchmove', (e) => {
+    if (pointerActive && e.touches.length > 0) {
+        e.preventDefault();
+        handleCanvasPointer(e.touches[0].clientX, e.touches[0].clientY);
+    }
+}, { passive: false });
+
+canvas.addEventListener('touchend', () => {
+    pointerActive = false;
+    keys.left = false;
+    keys.right = false;
+});
+
+// UI Button Listeners
+document.getElementById('start-btn').addEventListener('click', startGame);
+document.getElementById('retry-btn').addEventListener('click', startGame);
+document.getElementById('pause-btn').addEventListener('click', togglePause);
+document.getElementById('resume-btn').addEventListener('click', togglePause);
+document.getElementById('restart-pause-btn').addEventListener('click', startGame);
+
+document.getElementById('mute-btn').addEventListener('click', () => {
+    const isMuted = audio.toggleMute();
+    document.getElementById('mute-btn').textContent = isMuted ? '🔇 MUTED' : '🔊 SFX ON';
+});
+
+// ============================================================================
+// MAIN ANIMATION LOOP
+// ============================================================================
+let lastTimestamp = 0;
+function gameLoop(timestamp) {
+    if (!lastTimestamp) lastTimestamp = timestamp;
+    const dt = Math.min(0.05, (timestamp - lastTimestamp) / 1000);
+    lastTimestamp = timestamp;
+
+    update(dt);
+    render();
+    requestAnimationFrame(gameLoop);
+}
+
+window.onload = function () {
+    document.getElementById('highscore-display').textContent = highScore;
+    initStreetDecor();
+    renderStartPreviews();
+    requestAnimationFrame(gameLoop);
+};
+</script>
+</body>
+</html>
